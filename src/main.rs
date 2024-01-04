@@ -9,21 +9,19 @@ fn usage(prog: &str) {
 fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() != 7 {
-        usage(&args[0]);
-        return Err("All 6 die faces must be provided.".to_string());
-    }
+    let current_roll: die::Roll = match args[1..].try_into() {
+        Ok(r) => r,
+        Err(die::RollConstructionError::WrongDieCount) => {
+            usage(&args[0]);
+            return Err("Expected 6 die faces as arguments.".to_string());
+        }
+        Err(die::RollConstructionError::InvalidDie(e)) => {
+            usage(&args[0]);
+            return Err(format!("{e}"));
+        }
+    };
 
-    let mut current_roll: Vec<die::Die> = vec![];
-    for n in args[1..].iter() {
-        current_roll.push(match n.clone().try_into() {
-            Ok(d) => d,
-            Err(die::DieConstructionError::NonDigit) => return Err(format!("Input {n} is not a digit.")),
-            Err(die::DieConstructionError::OutOfRange) => return Err(format!("Digit {n} is not a die face from 1-6.")),
-        });
-    }
-
-    println!("{current_roll:?}");
+    println!("{current_roll}");
 
     Ok(())
 }

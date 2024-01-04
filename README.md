@@ -22,6 +22,10 @@ $ fao 1 1 2 6 5 4
 ...some statistcal breakdown; in progress...
 ```
 
+## Limitations
+
+Currently, the only supported game mode is separate turns mode with the first to 10,000.
+
 <!--- Links --->
 
 [dice-10000]: https://en.wikipedia.org/wiki/Dice_10000
