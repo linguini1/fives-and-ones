@@ -24,4 +24,4 @@ $ fao 1 1 2 6 5 4
 
 <!--- Links --->
 
-[dice-10000](https://en.wikipedia.org/wiki/Dice_10000)
+[dice-10000]: https://en.wikipedia.org/wiki/Dice_10000
