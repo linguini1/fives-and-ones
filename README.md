@@ -18,8 +18,7 @@ For example:
 
 ```console
 $ fao 1 1 2 6 5 4
-
-...some statistcal breakdown; in progress...
+Your roll is worth 250 points.
 ```
 
 ## Limitations

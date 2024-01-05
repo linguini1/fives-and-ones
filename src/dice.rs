@@ -1,0 +1,184 @@
+use std::collections::HashMap;
+use std::convert::TryFrom;
+use std::fmt::{Debug, Display};
+use std::iter::zip;
+
+const DICE_COUNT: u8 = 6;
+
+#[derive(Clone, Copy, Hash, Eq, PartialEq)]
+pub enum Die {
+    One = 1,
+    Two = 2,
+    Three = 3,
+    Four = 4,
+    Five = 5,
+    Six = 6,
+}
+
+pub enum DieConstructionError {
+    NonDigit,
+    OutOfRange,
+}
+
+impl Display for DieConstructionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::OutOfRange => write!(f, "Face value out of range (1 - 6)."),
+            Self::NonDigit => write!(f, "Die value not a digit."),
+        }
+    }
+}
+
+impl TryFrom<String> for Die {
+    type Error = DieConstructionError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let num: u8 = value.parse().map_err(|_| DieConstructionError::NonDigit)?;
+        num.try_into()
+    }
+}
+
+impl TryFrom<u8> for Die {
+    type Error = DieConstructionError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(Die::One),
+            2 => Ok(Die::Two),
+            3 => Ok(Die::Three),
+            4 => Ok(Die::Four),
+            5 => Ok(Die::Five),
+            6 => Ok(Die::Six),
+            _ => Err(DieConstructionError::OutOfRange),
+        }
+    }
+}
+
+impl Display for Die {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", *self as u8)
+    }
+}
+
+impl Debug for Die {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Die({})", *self as u8)
+    }
+}
+
+#[derive(Debug)]
+pub struct Roll {
+    dice: [Die; 6],
+}
+
+pub enum RollConstructionError {
+    WrongDieCount,
+    InvalidDie(DieConstructionError),
+}
+
+impl TryFrom<&[String]> for Roll {
+    type Error = RollConstructionError;
+
+    fn try_from(value: &[String]) -> Result<Self, Self::Error> {
+        if value.len() != DICE_COUNT.into() {
+            return Err(RollConstructionError::WrongDieCount);
+        }
+
+        let mut current_roll: Roll = Roll { dice: [Die::One; 6] };
+        for (i, n) in value.iter().enumerate() {
+            current_roll.dice[i] = match n.clone().try_into() {
+                Ok(d) => d,
+                Err(e) => return Err(RollConstructionError::InvalidDie(e)),
+            };
+        }
+        Ok(current_roll)
+    }
+}
+
+impl Display for Roll {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[ ")?;
+        for die in self.dice {
+            write!(f, "{die} ")?;
+        }
+        write!(f, "]")?;
+        Ok(())
+    }
+}
+
+impl Roll {
+    pub fn new(dice: [Die; 6]) -> Self {
+        Self { dice }
+    }
+
+    pub fn score(&self) -> u32 {
+        // Populate counts of each die type
+        let mut counts: HashMap<Die, u8> = HashMap::from_iter(zip(self.dice.iter().cloned(), [0u8; 6].iter().cloned()));
+        for die in self.dice {
+            counts.entry(die).and_modify(|c| *c += 1);
+        }
+
+        // Consider straight (dice 1 - 6)
+        if counts.keys().len() == 6 {
+            return 2000;
+        }
+
+        // Consider three pairs
+        if counts.keys().len() == 3 && counts.values().all(|c| *c == 2) {
+            return 1500;
+        }
+
+        let mut score: u32 = 0;
+        for (die, count) in counts.iter() {
+            match (die, *count) {
+                (Die::One, 1 | 2) => score += *count as u32 * 100,
+                (Die::One, _) => score += 1000 * 2u32.pow(*count as u32 - 3),
+                (Die::Five, 1 | 2) => score += *count as u32 * 50,
+                (d, c) if c >= 3 => score += 100 * *d as u32 * 2u32.pow(*count as u32 - 3),
+                _ => {} // Pairs of regular numbers
+            }
+        }
+        score
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn score_run() {
+        let roll = Roll::new([Die::One, Die::Two, Die::Three, Die::Four, Die::Five, Die::Six]);
+        assert_eq!(roll.score(), 2000);
+    }
+
+    #[test]
+    fn score_three_pairs() {
+        let roll = Roll::new([Die::One, Die::Two, Die::One, Die::Two, Die::Five, Die::Five]);
+        assert_eq!(roll.score(), 1500);
+    }
+
+    #[test]
+    fn score_all_ones() {
+        let roll = Roll::new([Die::One, Die::One, Die::One, Die::One, Die::One, Die::One]);
+        assert_eq!(roll.score(), 8000);
+    }
+
+    #[test]
+    fn score_three_threes() {
+        let roll = Roll::new([Die::Three, Die::Two, Die::Three, Die::Three, Die::Two, Die::Four]);
+        assert_eq!(roll.score(), 300);
+    }
+
+    #[test]
+    fn score_three_fours_and_one() {
+        let roll = Roll::new([Die::Four, Die::Two, Die::Four, Die::One, Die::Two, Die::Four]);
+        assert_eq!(roll.score(), 500);
+    }
+
+    #[test]
+    fn score_three_twos_and_five() {
+        let roll = Roll::new([Die::Two, Die::Two, Die::Three, Die::Five, Die::Six, Die::Two]);
+        assert_eq!(roll.score(), 250);
+    }
+}

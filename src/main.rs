@@ -1,5 +1,5 @@
 use std::env;
-mod die;
+mod dice;
 
 fn usage(prog: &str) {
     eprintln!("{prog} dice");
@@ -9,19 +9,19 @@ fn usage(prog: &str) {
 fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
 
-    let current_roll: die::Roll = match args[1..].try_into() {
+    let current_roll: dice::Roll = match args[1..].try_into() {
         Ok(r) => r,
-        Err(die::RollConstructionError::WrongDieCount) => {
+        Err(dice::RollConstructionError::WrongDieCount) => {
             usage(&args[0]);
             return Err("Expected 6 die faces as arguments.".to_string());
         }
-        Err(die::RollConstructionError::InvalidDie(e)) => {
+        Err(dice::RollConstructionError::InvalidDie(e)) => {
             usage(&args[0]);
             return Err(format!("{e}"));
         }
     };
 
-    println!("{current_roll}");
+    println!("Your roll is worth {} points.", current_roll.score());
 
     Ok(())
 }
