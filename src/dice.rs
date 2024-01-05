@@ -111,12 +111,18 @@ impl Roll {
         Self { dice }
     }
 
-    pub fn score(&self) -> u32 {
-        // Populate counts of each die type
-        let mut counts: HashMap<Die, u8> = HashMap::from_iter(zip(self.dice.iter().cloned(), [0u8; 6].iter().cloned()));
+    /// Counts the occurrences of each die face
+    fn die_counts(&self) -> HashMap<Die, u8> {
+        let mut counts = HashMap::from_iter(zip(self.dice.iter().cloned(), [0u8; 6].iter().cloned()));
         for die in self.dice {
             counts.entry(die).and_modify(|c| *c += 1);
         }
+        counts
+    }
+
+    /// Calculates the score of the roll
+    pub fn score(&self) -> u32 {
+        let counts = self.die_counts();
 
         // Consider straight (dice 1 - 6)
         if counts.keys().len() == 6 {
@@ -140,21 +146,48 @@ impl Roll {
         }
         score
     }
+
+    /// Determines whether or not the player can roll again with this hand
+    pub fn can_reroll(&self) -> bool {
+        let counts = self.die_counts();
+
+        match counts.keys().len() {
+            6 => true,                                     // Straight 1 - 6
+            3 if counts.values().all(|c| *c == 2) => true, // Three pairs
+            2 if counts.values().all(|c| *c == 3) => true, // Two triplets
+            _ => {
+                // Triplet and any combination of fives and ones
+                // Four of a kind and any combination of fives and ones
+                // Five of a kind and a five or one
+
+                let regulars: Vec<&Die> = counts.keys().filter(|d| **d != Die::One && **d != Die::Five).collect();
+                // If the number of regulars is or exceeds 3, then the combination of regulars
+                // scores and the player can re-roll
+                if regulars.len() == 1 && (*counts.get(regulars[0]).unwrap() >= 3) {
+                    return true;
+                }
+                false
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    const RUN: [Die; 6] = [Die::One, Die::Two, Die::Three, Die::Four, Die::Five, Die::Six];
+    const THREE_PAIRS: [Die; 6] = [Die::One, Die::Two, Die::One, Die::Two, Die::Five, Die::Five];
+
     #[test]
     fn score_run() {
-        let roll = Roll::new([Die::One, Die::Two, Die::Three, Die::Four, Die::Five, Die::Six]);
+        let roll = Roll::new(RUN);
         assert_eq!(roll.score(), 2000);
     }
 
     #[test]
     fn score_three_pairs() {
-        let roll = Roll::new([Die::One, Die::Two, Die::One, Die::Two, Die::Five, Die::Five]);
+        let roll = Roll::new(THREE_PAIRS);
         assert_eq!(roll.score(), 1500);
     }
 
@@ -180,5 +213,53 @@ mod tests {
     fn score_three_twos_and_five() {
         let roll = Roll::new([Die::Two, Die::Two, Die::Three, Die::Five, Die::Six, Die::Two]);
         assert_eq!(roll.score(), 250);
+    }
+
+    #[test]
+    fn reroll_run() {
+        let roll = Roll::new(RUN);
+        assert!(roll.can_reroll());
+    }
+
+    #[test]
+    fn cant_reroll_almost_run() {
+        let roll = Roll::new([Die::One, Die::Two, Die::Two, Die::Four, Die::Five, Die::Six]);
+        assert!(!roll.can_reroll());
+    }
+
+    #[test]
+    fn reroll_three_pair() {
+        let roll = Roll::new(THREE_PAIRS);
+        assert!(roll.can_reroll());
+    }
+
+    #[test]
+    fn reroll_five_of_a_kind_with_one() {
+        let roll = Roll::new([Die::One, Die::Two, Die::Two, Die::Two, Die::Two, Die::Two]);
+        assert!(roll.can_reroll());
+    }
+
+    #[test]
+    fn reroll_four_of_a_kind_with_one_and_five() {
+        let roll = Roll::new([Die::One, Die::Two, Die::Two, Die::Five, Die::Two, Die::Two]);
+        assert!(roll.can_reroll());
+    }
+
+    #[test]
+    fn reroll_two_triplets() {
+        let roll = Roll::new([Die::Two, Die::Two, Die::Two, Die::Six, Die::Six, Die::Six]);
+        assert!(roll.can_reroll());
+    }
+
+    #[test]
+    fn reroll_three_of_a_kind_with_two_ones_and_five() {
+        let roll = Roll::new([Die::Two, Die::Two, Die::Two, Die::One, Die::One, Die::Five]);
+        assert!(roll.can_reroll());
+    }
+
+    #[test]
+    fn cant_reroll_three_of_a_kind_with_two_ones_and_regular() {
+        let roll = Roll::new([Die::Two, Die::Two, Die::Two, Die::One, Die::One, Die::Six]);
+        assert!(!roll.can_reroll());
     }
 }

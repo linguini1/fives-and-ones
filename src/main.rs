@@ -22,6 +22,9 @@ fn main() -> Result<(), String> {
     };
 
     println!("Your roll is worth {} points.", current_roll.score());
+    if current_roll.can_reroll() {
+        println!("You can roll again.");
+    }
 
     Ok(())
 }
