@@ -107,10 +107,6 @@ impl Display for Roll {
 }
 
 impl Roll {
-    pub fn new(dice: [Die; 6]) -> Self {
-        Self { dice }
-    }
-
     /// Counts the occurrences of each die face
     fn die_counts(&self) -> HashMap<Die, u8> {
         let mut counts = HashMap::from_iter(zip(self.dice.iter().cloned(), [0u8; 6].iter().cloned()));
@@ -174,92 +170,107 @@ impl Roll {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
+
+    impl Roll {
+        pub fn new(dice: [Die; 6]) -> Self {
+            Self { dice }
+        }
+    }
 
     const RUN: [Die; 6] = [Die::One, Die::Two, Die::Three, Die::Four, Die::Five, Die::Six];
     const THREE_PAIRS: [Die; 6] = [Die::One, Die::Two, Die::One, Die::Two, Die::Five, Die::Five];
 
-    #[test]
-    fn score_run() {
-        let roll = Roll::new(RUN);
-        assert_eq!(roll.score(), 2000);
+    mod score {
+        use super::*;
+
+        #[test]
+        fn score_run() {
+            let roll = Roll::new(RUN);
+            assert_eq!(roll.score(), 2000);
+        }
+
+        #[test]
+        fn score_three_pairs() {
+            let roll = Roll::new(THREE_PAIRS);
+            assert_eq!(roll.score(), 1500);
+        }
+
+        #[test]
+        fn score_all_ones() {
+            let roll = Roll::new([Die::One, Die::One, Die::One, Die::One, Die::One, Die::One]);
+            assert_eq!(roll.score(), 8000);
+        }
+
+        #[test]
+        fn score_three_threes() {
+            let roll = Roll::new([Die::Three, Die::Two, Die::Three, Die::Three, Die::Two, Die::Four]);
+            assert_eq!(roll.score(), 300);
+        }
+
+        #[test]
+        fn score_three_fours_and_one() {
+            let roll = Roll::new([Die::Four, Die::Two, Die::Four, Die::One, Die::Two, Die::Four]);
+            assert_eq!(roll.score(), 500);
+        }
+
+        #[test]
+        fn score_three_twos_and_five() {
+            let roll = Roll::new([Die::Two, Die::Two, Die::Three, Die::Five, Die::Six, Die::Two]);
+            assert_eq!(roll.score(), 250);
+        }
     }
 
-    #[test]
-    fn score_three_pairs() {
-        let roll = Roll::new(THREE_PAIRS);
-        assert_eq!(roll.score(), 1500);
-    }
+    mod reroll {
+        use super::*;
 
-    #[test]
-    fn score_all_ones() {
-        let roll = Roll::new([Die::One, Die::One, Die::One, Die::One, Die::One, Die::One]);
-        assert_eq!(roll.score(), 8000);
-    }
+        #[test]
+        fn reroll_run() {
+            let roll = Roll::new(RUN);
+            assert!(roll.can_reroll());
+        }
 
-    #[test]
-    fn score_three_threes() {
-        let roll = Roll::new([Die::Three, Die::Two, Die::Three, Die::Three, Die::Two, Die::Four]);
-        assert_eq!(roll.score(), 300);
-    }
+        #[test]
+        fn cant_reroll_almost_run() {
+            let roll = Roll::new([Die::One, Die::Two, Die::Two, Die::Four, Die::Five, Die::Six]);
+            assert!(!roll.can_reroll());
+        }
 
-    #[test]
-    fn score_three_fours_and_one() {
-        let roll = Roll::new([Die::Four, Die::Two, Die::Four, Die::One, Die::Two, Die::Four]);
-        assert_eq!(roll.score(), 500);
-    }
+        #[test]
+        fn reroll_three_pair() {
+            let roll = Roll::new(THREE_PAIRS);
+            assert!(roll.can_reroll());
+        }
 
-    #[test]
-    fn score_three_twos_and_five() {
-        let roll = Roll::new([Die::Two, Die::Two, Die::Three, Die::Five, Die::Six, Die::Two]);
-        assert_eq!(roll.score(), 250);
-    }
+        #[test]
+        fn reroll_five_of_a_kind_with_one() {
+            let roll = Roll::new([Die::One, Die::Two, Die::Two, Die::Two, Die::Two, Die::Two]);
+            assert!(roll.can_reroll());
+        }
 
-    #[test]
-    fn reroll_run() {
-        let roll = Roll::new(RUN);
-        assert!(roll.can_reroll());
-    }
+        #[test]
+        fn reroll_four_of_a_kind_with_one_and_five() {
+            let roll = Roll::new([Die::One, Die::Two, Die::Two, Die::Five, Die::Two, Die::Two]);
+            assert!(roll.can_reroll());
+        }
 
-    #[test]
-    fn cant_reroll_almost_run() {
-        let roll = Roll::new([Die::One, Die::Two, Die::Two, Die::Four, Die::Five, Die::Six]);
-        assert!(!roll.can_reroll());
-    }
+        #[test]
+        fn reroll_two_triplets() {
+            let roll = Roll::new([Die::Two, Die::Two, Die::Two, Die::Six, Die::Six, Die::Six]);
+            assert!(roll.can_reroll());
+        }
 
-    #[test]
-    fn reroll_three_pair() {
-        let roll = Roll::new(THREE_PAIRS);
-        assert!(roll.can_reroll());
-    }
+        #[test]
+        fn reroll_three_of_a_kind_with_two_ones_and_five() {
+            let roll = Roll::new([Die::Two, Die::Two, Die::Two, Die::One, Die::One, Die::Five]);
+            assert!(roll.can_reroll());
+        }
 
-    #[test]
-    fn reroll_five_of_a_kind_with_one() {
-        let roll = Roll::new([Die::One, Die::Two, Die::Two, Die::Two, Die::Two, Die::Two]);
-        assert!(roll.can_reroll());
-    }
-
-    #[test]
-    fn reroll_four_of_a_kind_with_one_and_five() {
-        let roll = Roll::new([Die::One, Die::Two, Die::Two, Die::Five, Die::Two, Die::Two]);
-        assert!(roll.can_reroll());
-    }
-
-    #[test]
-    fn reroll_two_triplets() {
-        let roll = Roll::new([Die::Two, Die::Two, Die::Two, Die::Six, Die::Six, Die::Six]);
-        assert!(roll.can_reroll());
-    }
-
-    #[test]
-    fn reroll_three_of_a_kind_with_two_ones_and_five() {
-        let roll = Roll::new([Die::Two, Die::Two, Die::Two, Die::One, Die::One, Die::Five]);
-        assert!(roll.can_reroll());
-    }
-
-    #[test]
-    fn cant_reroll_three_of_a_kind_with_two_ones_and_regular() {
-        let roll = Roll::new([Die::Two, Die::Two, Die::Two, Die::One, Die::One, Die::Six]);
-        assert!(!roll.can_reroll());
+        #[test]
+        fn cant_reroll_three_of_a_kind_with_two_ones_and_regular() {
+            let roll = Roll::new([Die::Two, Die::Two, Die::Two, Die::One, Die::One, Die::Six]);
+            assert!(!roll.can_reroll());
+        }
     }
 }
