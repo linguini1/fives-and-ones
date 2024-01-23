@@ -1,4 +1,5 @@
 use std::env;
+mod combos;
 mod dice;
 
 fn usage(prog: &str) {

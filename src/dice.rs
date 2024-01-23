@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use std::fmt::{Debug, Display};
 use std::iter::zip;
 
-const DICE_COUNT: u8 = 6;
+pub const DICE_COUNT: u8 = 6;
 
 #[derive(Clone, Copy, Hash, Eq, PartialEq)]
 pub enum Die {
