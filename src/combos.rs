@@ -1,8 +1,7 @@
 use crate::dice::Die;
-use crate::dice::DICE_COUNT;
 
 /// Calculate the chance of rolling the given set of dice in `rolls` number of rolls.
-pub fn chances(dice: Vec<Die>, rolls: u16) -> f32 {
+pub fn chances(dice: &[Die], rolls: u16) -> f32 {
     // Chances of not rolling the specific die
     let mut chance_no_roll: f32 = 1.0;
     for _die in dice {
@@ -18,46 +17,44 @@ pub fn chances(dice: Vec<Die>, rolls: u16) -> f32 {
 }
 
 /// Calculate the factorial of a number
-fn factorial(number: u64) -> u64 {
+fn factorial(mut number: u64) -> u64 {
     let mut total: u64 = 1;
-    let mut n = number;
-    while n > 0 {
-        total *= n;
-        n -= 1;
+    while number > 0 {
+        total *= number;
+        number -= 1;
     }
     total
+}
+
+/// Calculate the result of n choose m
+fn choose(n: u64, r: u64) -> u64 {
+    factorial(n) / (factorial(r) * factorial(n - r))
 }
 
 #[cfg(test)]
 mod tests {
 
-    mod fact {
-        use crate::combos::factorial;
+    mod mathematics {
+        use crate::combos::{choose, factorial};
 
         #[test]
-        fn factorial_0() {
+        fn factorials() {
             assert_eq!(factorial(0), 1);
-        }
-
-        #[test]
-        fn factorial_1() {
             assert_eq!(factorial(1), 1);
-        }
-
-        #[test]
-        fn factorial_6() {
             assert_eq!(factorial(6), 720);
+            assert_eq!(factorial(12), 479001600);
         }
 
         #[test]
-        fn factorial_large_number() {
-            assert_eq!(factorial(12), 479001600);
+        fn choosing() {
+            assert_eq!(choose(12, 2), 66);
+            assert_eq!(choose(2, 2), 1);
+            assert_eq!(choose(2, 1), 2);
         }
     }
 
     mod combinatorics {
-        use crate::combos::chances;
-        use crate::combos::factorial;
+        use crate::combos::{chances, factorial};
         use crate::dice::Die;
 
         const DELTA: f32 = 0.001;
@@ -71,14 +68,14 @@ mod tests {
 
         #[test]
         fn single_die() {
-            assert_approx!(chances(vec![Die::One], 1), ONE_IN_SIX, DELTA);
+            assert_approx!(chances(&[Die::One], 1), ONE_IN_SIX, DELTA);
         }
 
         #[test]
         fn two_dice() {
             assert_approx!(
-                chances(vec![Die::One, Die::Two], 1),
-                factorial(6) as f32 / (factorial(2) as f32 * (6.0 - 2.0)),
+                chances(&[Die::One, Die::Two], 1),
+                factorial(6) as f32 / (factorial(2) as f32 * 4.0),
                 DELTA
             );
         }
