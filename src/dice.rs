@@ -13,6 +13,7 @@ pub enum Die {
     Four = 4,
     Five = 5,
     Six = 6,
+    Any = 7,
 }
 
 pub enum DieConstructionError {
@@ -68,7 +69,7 @@ impl Debug for Die {
 
 #[derive(Debug)]
 pub struct Roll {
-    dice: [Die; 6],
+    dice: [Die; DICE_COUNT as usize],
 }
 
 pub enum RollConstructionError {
@@ -165,6 +166,16 @@ impl Roll {
                 false
             }
         }
+    }
+
+    pub fn diff(&self, other: &Roll) -> Vec<Die> {
+        let mut difference: Vec<Die> = other.dice.into();
+        for die in self.dice {
+            if let Some(idx) = difference.iter().position(|x| die == *x) {
+                difference.remove(idx);
+            }
+        }
+        difference
     }
 }
 
@@ -271,6 +282,36 @@ mod tests {
         fn cant_reroll_three_of_a_kind_with_two_ones_and_regular() {
             let roll = Roll::new([Die::Two, Die::Two, Die::Two, Die::One, Die::One, Die::Six]);
             assert!(!roll.can_reroll());
+        }
+    }
+
+    mod difference {
+        use crate::dice::{Die, Roll};
+
+        #[test]
+        fn compute_difference() {
+            assert_eq!(
+                Roll::new([Die::One, Die::One, Die::One, Die::One, Die::One, Die::One]).diff(&Roll::new([
+                    Die::One,
+                    Die::Two,
+                    Die::One,
+                    Die::Two,
+                    Die::One,
+                    Die::One,
+                ])),
+                vec![Die::Two, Die::Two],
+            );
+            assert_eq!(
+                Roll::new([Die::One, Die::One, Die::One, Die::One, Die::One, Die::One]).diff(&Roll::new([
+                    Die::One,
+                    Die::Two,
+                    Die::Three,
+                    Die::Four,
+                    Die::Five,
+                    Die::Six,
+                ])),
+                vec![Die::Two, Die::Three, Die::Four, Die::Five, Die::Six],
+            );
         }
     }
 }

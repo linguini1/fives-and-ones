@@ -1,6 +1,6 @@
-use std::env;
 mod combos;
 mod dice;
+use std::env;
 
 fn usage(prog: &str) {
     eprintln!("{prog} dice");
@@ -24,8 +24,18 @@ fn main() -> Result<(), String> {
 
     println!("Your roll is worth {} points.", current_roll.score());
     if current_roll.can_reroll() {
-        println!("You can roll again.");
+        println!("You can roll again! Re-roll all your dice.");
+        return Ok(()); // Early return since we're just going to re-roll all dice no matter what
     }
+
+    // The only rolls that should be computed are rolls that provide an increase in score
+    // Out of these rolls, show only the most probable variant among all rolls with the same score
+    // Example:
+    // Given roll: (1 1) 2 3 4 5
+    // If we gain another 1 we can increase our score from 200 to 1000
+    // Desired roll: (1 1 1) x x x (x values don't matter)
+    // Highest probability to achieve this variant is rolling 2, 3, 4 and 5 again.
+    // Do NOT show variant where you re-roll one of the 1s as well and hope to get 2 1s.
 
     Ok(())
 }
