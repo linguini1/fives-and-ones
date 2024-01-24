@@ -2,6 +2,8 @@ mod combos;
 mod dice;
 use std::env;
 
+use crate::combos::chances;
+
 fn usage(prog: &str) {
     eprintln!("{prog} dice");
     eprintln!("dice\t\tThe face values of the dice in the current role, separated by spaces.");
@@ -36,6 +38,16 @@ fn main() -> Result<(), String> {
     // Desired roll: (1 1 1) x x x (x values don't matter)
     // Highest probability to achieve this variant is rolling 2, 3, 4 and 5 again.
     // Do NOT show variant where you re-roll one of the 1s as well and hope to get 2 1s.
+    let better_roll = dice::Roll::new([
+        dice::Die::One,
+        dice::Die::One,
+        dice::Die::One,
+        dice::Die::Any,
+        dice::Die::Any,
+        dice::Die::Any,
+    ]);
+
+    println!("Chances: {}", current_roll.chances_to(&better_roll));
 
     Ok(())
 }

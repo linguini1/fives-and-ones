@@ -108,6 +108,11 @@ impl Display for Roll {
 }
 
 impl Roll {
+    /// Constructs a new roll containing the given set of dice.
+    pub fn new(dice: [Die; 6]) -> Self {
+        Self { dice }
+    }
+
     /// Counts the occurrences of each die face
     fn die_counts(&self) -> HashMap<Die, u8> {
         let mut counts = HashMap::from_iter(zip(self.dice.iter().cloned(), [0u8; 6].iter().cloned()));
@@ -168,6 +173,12 @@ impl Roll {
         }
     }
 
+    /// Computes the difference between this roll and another. The diff contains dice that only
+    /// appear in `other`.
+    /// # Examples
+    /// ```rust
+    /// all_ones.diff(&straight) // [Die::Two, Die::Three, Die::Four, Die::Five, Die::Six]
+    /// ```
     pub fn diff(&self, other: &Self) -> Vec<Die> {
         let mut difference: Vec<Die> = other.dice.into();
         for die in self.dice {
@@ -185,13 +196,6 @@ impl Roll {
 mod tests {
 
     use super::*;
-
-    impl Roll {
-        pub fn new(dice: [Die; 6]) -> Self {
-            Self { dice }
-        }
-    }
-
     const RUN: [Die; 6] = [Die::One, Die::Two, Die::Three, Die::Four, Die::Five, Die::Six];
     const THREE_PAIRS: [Die; 6] = [Die::One, Die::Two, Die::One, Die::Two, Die::Five, Die::Five];
 

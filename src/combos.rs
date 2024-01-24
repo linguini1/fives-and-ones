@@ -1,4 +1,13 @@
-use crate::dice::Die;
+use crate::dice::{Die, Roll};
+
+impl Roll {
+    /// Calculates the chances of rolling `other` as a decimal percentage using the current roll as a basis.
+    pub fn chances_to(&self, other: &Self) -> f32 {
+        let diff = self.diff(other);
+        let ndice = other.diff(self).len() as u8;
+        chance_to_roll(&diff, ndice)
+    }
+}
 
 /// Calculates the chance of rolling the given set of dice in `rolls` number of rolls with `ndice` dice.
 ///
@@ -16,7 +25,7 @@ use crate::dice::Die;
 /// chances(&[Die::Three], 2); // 0.305555...
 /// chances(&[Die::One, Die::One], 6); // 0.200938786
 /// ```
-pub fn chances(desired: &[Die], ndice: u8) -> f32 {
+fn chance_to_roll(desired: &[Die], ndice: u8) -> f32 {
     if desired.len() > ndice as usize {
         return 0.0;
     }
@@ -88,32 +97,32 @@ mod tests {
 
     mod combinatorics {
         use super::DELTA;
-        use crate::combos::chances;
+        use crate::combos::chance_to_roll;
         use crate::dice::Die;
 
         #[test]
         fn not_enough_dice() {
-            assert_approx!(chances(&[Die::One, Die::Two, Die::Three], 2), 0.0, DELTA);
+            assert_approx!(chance_to_roll(&[Die::One, Die::Two, Die::Three], 2), 0.0, DELTA);
         }
 
         #[test]
         fn single_die_single_roll() {
-            assert_approx!(chances(&[Die::One], 1), 1.0 / 6.0, DELTA);
+            assert_approx!(chance_to_roll(&[Die::One], 1), 1.0 / 6.0, DELTA);
         }
 
         #[test]
         fn one_desired() {
-            assert_approx!(chances(&[Die::One], 6), 0.6651012, DELTA);
+            assert_approx!(chance_to_roll(&[Die::One], 6), 0.6651012, DELTA);
         }
 
         #[test]
         fn two_desired() {
-            assert_approx!(chances(&[Die::One, Die::One], 6), 0.263_224_45_f32, DELTA);
+            assert_approx!(chance_to_roll(&[Die::One, Die::One], 6), 0.263_224_45_f32, DELTA);
         }
 
         #[test]
         fn two_dice() {
-            assert_approx!(chances(&[Die::Three], 2), 0.305_555_55_f32, DELTA);
+            assert_approx!(chance_to_roll(&[Die::Three], 2), 0.305_555_55_f32, DELTA);
         }
     }
 }
