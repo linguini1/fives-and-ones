@@ -1,22 +1,36 @@
 use crate::dice::Die;
 
-/// Calculate the chance of rolling the given set of dice in `rolls` number of rolls.
-pub fn chances(dice: &[Die], rolls: u16) -> f32 {
-    // Chances of not rolling the specific die
-    let mut chance_no_roll: f32 = 1.0;
-    for _die in dice {
-        chance_no_roll *= 5.0 / 6.0;
+/// Calculates the chance of rolling the given set of dice in `rolls` number of rolls with `ndice` dice.
+///
+/// # Arguments
+///
+/// * `desired` - The desired set of dice faces to roll.
+/// * `ndice` - The number of dice that will be rolled to achieve the desired set of dice.
+///
+/// # Returns
+/// The chances of rolling the desired set of dice using `ndice` dice expressed as a decimal fraction of 1.
+///
+/// # Examples
+/// ```rust
+/// chances(&[Die::One], 1); // 0.1666...
+/// chances(&[Die::Three], 2); // 0.305555...
+/// chances(&[Die::One, Die::One], 6); // 0.200938786
+/// ```
+pub fn chances(desired: &[Die], ndice: u8) -> f32 {
+    if desired.len() > ndice as usize {
+        return 0.0;
     }
 
-    let mut chance: f32 = chance_no_roll;
-    for _ in 1..rolls {
-        chance *= chance_no_roll;
-    }
+    let _total_outcomes = 6u32.pow(ndice.into());
 
-    1.0 - chance
+    let mut chance: f32 = 0.0;
+    for k in desired.len() as u8..ndice + 1 {
+        chance += binomial(ndice.into(), k as u64, 1.0 / 6.0)
+    }
+    chance
 }
 
-/// Calculate the factorial of a number
+/// Calculate the factorial of a number.
 fn factorial(mut number: u64) -> u64 {
     let mut total: u64 = 1;
     while number > 0 {
@@ -26,16 +40,29 @@ fn factorial(mut number: u64) -> u64 {
     total
 }
 
-/// Calculate the result of n choose m
+/// Calculate the result of n choose m.
 fn choose(n: u64, r: u64) -> u64 {
     factorial(n) / (factorial(r) * factorial(n - r))
+}
+
+/// Calculate binomial probability.
+fn binomial(n: u64, k: u64, p: f32) -> f32 {
+    choose(n, k) as f32 * p.powf(k as f32) * (1.0 - p).powf((n - k) as f32)
 }
 
 #[cfg(test)]
 mod tests {
 
+    const DELTA: f32 = 0.0001;
+    macro_rules! assert_approx {
+        ($actual:expr, $expected:expr, $delta:expr) => {
+            assert!($expected - $delta <= $actual && $actual <= $expected + $delta);
+        };
+    }
+
     mod mathematics {
-        use crate::combos::{choose, factorial};
+        use super::DELTA;
+        use crate::combos::{binomial, choose, factorial};
 
         #[test]
         fn factorials() {
@@ -49,35 +76,44 @@ mod tests {
         fn choosing() {
             assert_eq!(choose(12, 2), 66);
             assert_eq!(choose(2, 2), 1);
+            assert_eq!(choose(6, 2), 15);
             assert_eq!(choose(2, 1), 2);
+        }
+
+        #[test]
+        fn binomials() {
+            assert_approx!(binomial(6, 2, 1.0 / 6.0), 0.200_938_79_f32, DELTA);
         }
     }
 
     mod combinatorics {
-        use crate::combos::{chances, factorial};
+        use super::DELTA;
+        use crate::combos::chances;
         use crate::dice::Die;
 
-        const DELTA: f32 = 0.001;
-        const ONE_IN_SIX: f32 = 1.0 / 6.0;
-
-        macro_rules! assert_approx {
-            ($actual:expr, $expected:expr, $delta:expr) => {
-                assert!($expected - $delta <= $actual && $actual <= $expected + $delta);
-            };
+        #[test]
+        fn not_enough_dice() {
+            assert_approx!(chances(&[Die::One, Die::Two, Die::Three], 2), 0.0, DELTA);
         }
 
         #[test]
-        fn single_die() {
-            assert_approx!(chances(&[Die::One], 1), ONE_IN_SIX, DELTA);
+        fn single_die_single_roll() {
+            assert_approx!(chances(&[Die::One], 1), 1.0 / 6.0, DELTA);
+        }
+
+        #[test]
+        fn one_desired() {
+            assert_approx!(chances(&[Die::One], 6), 0.6651012, DELTA);
+        }
+
+        #[test]
+        fn two_desired() {
+            assert_approx!(chances(&[Die::One, Die::One], 6), 0.263_224_45_f32, DELTA);
         }
 
         #[test]
         fn two_dice() {
-            assert_approx!(
-                chances(&[Die::One, Die::Two], 1),
-                factorial(6) as f32 / (factorial(2) as f32 * 4.0),
-                DELTA
-            );
+            assert_approx!(chances(&[Die::Three], 2), 0.305_555_55_f32, DELTA);
         }
     }
 }
