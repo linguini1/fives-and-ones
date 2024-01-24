@@ -168,14 +168,16 @@ impl Roll {
         }
     }
 
-    pub fn diff(&self, other: &Roll) -> Vec<Die> {
+    pub fn diff(&self, other: &Self) -> Vec<Die> {
         let mut difference: Vec<Die> = other.dice.into();
         for die in self.dice {
             if let Some(idx) = difference.iter().position(|x| die == *x) {
                 difference.remove(idx);
             }
         }
-        difference
+        // Remove any don't cares since we can't actually roll them, and they can be any die
+        // already existing in our current roll
+        difference.into_iter().filter(|x| x != &Die::Any).collect()
     }
 }
 
@@ -311,6 +313,17 @@ mod tests {
                     Die::Six,
                 ])),
                 vec![Die::Two, Die::Three, Die::Four, Die::Five, Die::Six],
+            );
+            assert_eq!(
+                Roll::new([Die::One, Die::One, Die::Two, Die::Three, Die::Four, Die::Five]).diff(&Roll::new([
+                    Die::One,
+                    Die::One,
+                    Die::One,
+                    Die::Any,
+                    Die::Any,
+                    Die::Any,
+                ])),
+                vec![Die::One],
             );
         }
     }
